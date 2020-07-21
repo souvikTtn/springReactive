@@ -9,11 +9,13 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.List;
@@ -53,6 +55,36 @@ public class ItemControllerTest {
                      .exchange()
                      .expectBodyList(Item.class)
                      .hasSize(5);
+    }
+
+    @Test
+    public void getItemById() {
+        webTestClient.get().uri(ItemConstant.ITEM_ENDPOINT.concat("/{id}"), "ABC")
+                     .exchange()
+                     .expectStatus().isOk()
+                     .expectBody()
+                     .jsonPath("$.price", 100);
+    }
+
+    @Test
+    public void getItemById_notFound() {
+        webTestClient.get().uri(ItemConstant.ITEM_ENDPOINT.concat("/{id}"), "DEF")
+                     .exchange()
+                     .expectStatus().isNotFound();
+    }
+
+    @Test
+    public void createItem() {
+        Item item = new Item(null, "Iphone X", 2000);
+        webTestClient.post().uri(ItemConstant.ITEM_ENDPOINT)
+                     .contentType(MediaType.APPLICATION_JSON_UTF8)
+                     .body(Mono.just(item), Item.class)
+                     .exchange()
+                     .expectStatus().isCreated()
+                     .expectBody()
+                     .jsonPath("$.description").isEqualTo("Iphone X")
+                     .jsonPath("$.id").isNotEmpty()
+                     .jsonPath("$.price").isEqualTo(2000);
     }
 
 }
